@@ -1,4 +1,3 @@
-Enrollment Code
 #include <Adafruit_Fingerprint.h> //For interfacing with fingerprint sensor
 #include <SoftwareSerial.h> //For serial communication
 SoftwareSerial port(2, 3);
