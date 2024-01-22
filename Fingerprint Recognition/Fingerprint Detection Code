@@ -1,0 +1,101 @@
+#include <Adafruit_Fingerprint.h> //For interfacing with fingerprint sensor
+#include<SoftwareSerial.h> //For serial communication
+SoftwareSerial port(2, 3);
+Adafruit_Fingerprint finger = Adafruit_Fingerprint(&port);
+void setup()
+{
+ Serial.begin(57600);
+ delay(100);
+ Serial.println("\n\nFingerprint Recognition test");
+ pinMode(13,OUTPUT);
+ finger.begin(57600); // set the data rate for the sensor serial port
+ delay(5);
+ if (finger.verifyPassword()) { //To verify sensor access password to detect it
+ Serial.println("Found fingerprint sensor!");
+ } else {
+ Serial.println("Did not find fingerprint sensor :(");
+ while (1) { delay(1); }
+ }
+ finger.getTemplateCount(); //To get enrolled id's
+ if (finger.templateCount == 0) {
+ Serial.print("Sensor doesn't contain any fingerprint data. Please 'Enroll' Some Fingerprint first .");
+ }
+ else {
+ Serial.println("\nWaiting for valid finger...");
+ Serial.print("Sensor contains "); Serial.print(finger.templateCount-1);
+ Serial.println(" templates\n");
+ }
+}
+void loop() // run over and over again
+{ getFingerprintID();
+ delay(50); 
+}
+int getFingerprintID() {
+ uint8_t ptr=finger.getImage(); //Ask sensor to take image of the finger pressed on surface
+ switch (ptr) {
+ case FINGERPRINT_OK:
+ Serial.println("Image taken");
+ break;
+ case FINGERPRINT_NOFINGER:
+ return ptr;
+ case FINGERPRINT_PACKETRECIEVEERR:
+ Serial.println("Communication error");
+ return ptr;
+ case FINGERPRINT_IMAGEFAIL:
+ Serial.println("Imaging error");
+ return ptr;
+ default:
+ Serial.println("Unknown error");
+ return ptr;
+ }
+ // OK success!
+ ptr = finger.image2Tz(); //Ask sensor to conver image to feature template
+ switch (ptr) {
+ case FINGERPRINT_OK:
+ Serial.println("Image converted");
+ break;
+ case FINGERPRINT_IMAGEMESS:
+ Serial.println("Image too messy");
+ return ptr;
+ case FINGERPRINT_PACKETRECIEVEERR:
+ Serial.println("Communication error");
+ return ptr;
+ case FINGERPRINT_FEATUREFAIL:
+ Serial.println("Could not find fingerprint features");
+ return ptr;
+ case FINGERPRINT_INVALIDIMAGE:
+ Serial.println("Could not find fingerprint features");
+ return ptr;
+ default:
+ Serial.println("Unknown error");
+ return ptr;
+ }
+ // OK converted!
+ ptr = finger.fingerSearch(); //Ask sensor to search and match fingerprint
+ if (ptr == FINGERPRINT_OK) {
+ Serial.println("Found a print match!");
+ } else if (ptr == FINGERPRINT_PACKETRECIEVEERR) {
+ Serial.println("Communication error");
+ delay(2000);
+ Serial.print("\n\nWaiting for valid finger...\n\n");
+ return ptr;
+ } else if (ptr == FINGERPRINT_NOTFOUND) {
+ Serial.println("Did not find a match");
+ delay(2000);
+ Serial.print("\n\nWaiting for valid finger...\n\n");
+ return ptr;
+ } else {
+ Serial.println("Unknown error");
+ delay(2000);
+ Serial.print("\n\nWaiting for valid finger...\n\n");
+ return ptr;
+ }
+ // found a match!
+ Serial.print("Found ID #"); Serial.print(finger.fingerID);
+ Serial.print(" with confidence of "); Serial.println(finger.confidence);
+ digitalWrite(13,HIGH);
+delay(5000);
+digitalWrite(13,LOW);
+Serial.print("\n\nWaiting for valid finger...\n\n");
+ return finger.fingerID;
+}
